@@ -21,7 +21,7 @@ from homeassistant.const import (
 from homeassistant.helpers.entity import Entity
 from custom_components.homee.util import get_attr_by_type
 
-REQUIREMENTS = ['https://github.com/twendt/pyhomee/archive/master.zip#pyhomee==0.0.1']
+REQUIREMENTS = ['https://github.com/twendt/pyhomee/archive/master.zip#pyhomee==0.0.2']
 
 _LOGGER = logging.getLogger(__name__)
 
