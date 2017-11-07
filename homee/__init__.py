@@ -38,6 +38,7 @@ HOMEE_ID_FORMAT = '{}_{}_{}_{}'
 HOMEE_NODES = {}
 HOMEE_ATTRIBUTES = defaultdict(list)
 
+HOMEE_IMPORT_GROUP = 'HASS'
 
 CONFIG_SCHEMA = vol.Schema({
     DOMAIN: vol.Schema({
@@ -48,7 +49,7 @@ CONFIG_SCHEMA = vol.Schema({
 }, extra=vol.ALLOW_EXTRA)
 
 HOMEE_COMPONENTS = [
-    'sensor', 'switch', 'light'
+    'sensor', 'switch', 'light', 'cover'
 ]
 
 SERVICE_PLAY_HOMEEGRAM = 'play_homeegram'
@@ -96,11 +97,18 @@ def setup(hass, base_config):
                       description=SERVICE_DESCRIPTIONS.get(SERVICE_PLAY_HOMEEGRAM))
 
     try:
-        nodes = HOMEE_CUBE.get_nodes()
+        all_nodes = HOMEE_CUBE.get_nodes()
     except RequestException:
         # There was a network related error connecting to the Vera controller.
         _LOGGER.exception("Error communicating with Homee")
         return False
+
+    group = HOMEE_CUBE.get_group_by_name(HOMEE_IMPORT_GROUP)
+    if group:
+        group_node_ids = HOMEE_CUBE.get_group_node_ids(group.id)
+        nodes = [ node for node in all_nodes if node.id in group_node_ids ]
+    else:
+        nodes = all_nodes
 
     for node in nodes:
         if node.id == -1:
@@ -110,6 +118,8 @@ def setup(hass, base_config):
         for attribute in node.attributes:
             if attribute.type == const.SWITCH:
                 _LOGGER.info("Node type: %s", node_type)
+                HOMEE_ATTRIBUTES[node_type].append(attribute)
+            elif attribute.type == const.COVER_POSITION:
                 HOMEE_ATTRIBUTES[node_type].append(attribute)
             else:
                 HOMEE_ATTRIBUTES['sensor'].append(attribute)
@@ -127,6 +137,8 @@ def map_homee_node(node):
         return 'light'
     if const.SWITCH in attr_types:
         return 'switch'
+    if const.COVER_POSITION in attr_types:
+        return 'cover'
 #    if isinstance(vera_device, veraApi.VeraThermostat):
 #        return 'climate'
 #    if isinstance(vera_device, veraApi.VeraCurtain):
